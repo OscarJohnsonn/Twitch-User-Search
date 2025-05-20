@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data && data[0]) {
                     displayUserInfo(data[0]);
                     updateRecentProfiles(data[0]);
+                    addDownloadJsonButton(data); // Add the JSON download button
                 } else {
                     userInfoDiv.innerHTML = '<p>No user found with that name.</p>';
                 }
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let userInfoHTML = `
             <img src="${user.logo}" alt="Profile Image">
+            <button class="download-image" data-url="${user.logo}" data-filename="${user.login}_logo.png">Download Logo</button>
             <h2>${user.displayName} ${user.stream ? '<span class="live-indicator">LIVE</span>' : ''}</h2>
             <p><strong>Login Name:</strong> ${user.login}</p>
             <p><strong>Bio:</strong> ${user.bio}</p>
@@ -60,6 +62,16 @@ document.addEventListener('DOMContentLoaded', function () {
         bannerHeader.innerHTML = userInfoHTML;
 
         userInfoDiv.appendChild(bannerHeader);
+
+        // Add download button for the banner
+        if (user.banner) {
+            const downloadBannerButton = document.createElement('button');
+            downloadBannerButton.classList.add('download-image');
+            downloadBannerButton.dataset.url = user.banner;
+            downloadBannerButton.dataset.filename = `${user.login}_banner.png`;
+            downloadBannerButton.textContent = 'Download Banner';
+            bannerHeader.appendChild(downloadBannerButton);
+        }
 
         const dataSectionContainer = document.createElement('div');
         dataSectionContainer.innerHTML = `
@@ -136,6 +148,58 @@ document.addEventListener('DOMContentLoaded', function () {
             </ul>
         `;
         userInfoDiv.appendChild(panelsDiv);
+
+        // Add event listeners to download buttons after they are added to the DOM
+        const downloadButtons = document.querySelectorAll('.download-image');
+        downloadButtons.forEach(button => {
+            button.addEventListener('click', downloadImage);
+        });
+    }
+
+    function addDownloadJsonButton(data) {
+        const downloadJsonButton = document.createElement('button');
+        downloadJsonButton.textContent = 'Download JSON Data';
+        downloadJsonButton.classList.add('download-json');
+        downloadJsonButton.addEventListener('click', () => {
+            downloadJson(data, 'twitch_user_data.json');
+        });
+
+        userInfoDiv.appendChild(downloadJsonButton);
+    }
+
+    function downloadImage(event) {
+        const imageUrl = event.target.dataset.url;
+        const filename = event.target.dataset.filename;
+
+        fetch(imageUrl, {
+            mode: 'cors' // Add this to handle CORS issues
+        })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            });
+    }
+
+    function downloadJson(data, filename) {
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], {
+            type: 'application/json'
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
     }
 
     function updateRecentProfiles(user) {
