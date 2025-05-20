@@ -241,7 +241,7 @@ button:hover {
   cursor: pointer;
   transition: background-color 0.3s ease;
   align-self: flex-end; /* Align button to the end of the container */
-  margin-top: auto;    /* Push button to the bottom */
+  margin-top: auto; /* Push button to the bottom */
 }
 
 .view-stats-button:hover {
@@ -279,4 +279,15 @@ button:hover {
     width: 60px;
     height: 60px;
   }
+}
+
+.download-image {
+  /* other styles */
+  display: flex; /* Add this to align icon and text */
+  align-items: center; /* Vertically align icon and text */
+  justify-content: center;
+}
+
+.download-image i {
+  margin-right: 5px; /* Add some spacing between the icon and the text */
 }

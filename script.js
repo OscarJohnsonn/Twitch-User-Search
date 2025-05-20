@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let recentProfiles = JSON.parse(localStorage.getItem(CACHE_KEY)) || [];
   displayRecentProfiles();
 
-  // Function to fetch user based on channel name
+  // Function to fetch user based on channel name from URL hash
   function loadUserFromHash() {
     const hash = window.location.hash.substring(1); // Remove the '#'
     if (hash) {
@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Load user from hash on page load
   loadUserFromHash();
+
+  // Add hashchange listener to update user info when the hash changes
+  window.addEventListener("hashchange", loadUserFromHash);
 
   searchForm.addEventListener('submit', function (event) {
     event.preventDefault();
@@ -79,17 +82,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     let userInfoHTML = `
-            <img src="${user.logo}" alt="Profile Image">
-            <button class="download-image" data-url="${user.logo}" data-filename="${user.login}_logo.png">Download Logo</button>
-            <h2>${user.displayName} ${
+      <img src="${user.logo}" alt="Profile Image">
+      <button class="download-image" data-url="${user.logo}" data-filename="${user.login}_logo.png">
+        <i class="fas fa-download"></i> Download Logo
+      </button>
+      <h2>${user.displayName} ${
       user.stream ? '<span class="live-indicator">LIVE</span>' : ''
     }</h2>
-            <p><strong>Login Name:</strong> ${user.login}</p>
-            <p><strong>Bio:</strong> ${user.bio}</p>
-        `;
+      <p><strong>Login Name:</strong> ${user.login}</p>
+      <p><strong>Bio:</strong> ${user.bio}</p>
+    `;
 
     bannerHeader.innerHTML = userInfoHTML;
-
     userInfoDiv.appendChild(bannerHeader);
 
     // Add download button for the banner
@@ -98,94 +102,73 @@ document.addEventListener('DOMContentLoaded', function () {
       downloadBannerButton.classList.add('download-image');
       downloadBannerButton.dataset.url = user.banner;
       downloadBannerButton.dataset.filename = `${user.login}_banner.png`;
-      downloadBannerButton.textContent = 'Download Banner';
+      downloadBannerButton.innerHTML =
+        '<i class="fas fa-download"></i> Download Banner';
       bannerHeader.appendChild(downloadBannerButton);
     }
 
     const dataSectionContainer = document.createElement('div');
-    dataSectionContainer.classList.add('data-section-container'); // Add grid container class
+    dataSectionContainer.classList.add('data-section-container');
     dataSectionContainer.innerHTML = `
-            <div class="data-section">
-                <h3>General Information</h3>
-                <p><strong>ID:</strong> <span class="copyable-text">${
-                  user.id
-                }</span></p>
-                <p><strong>Banned:</strong> ${user.banned ? 'Yes' : 'No'}</p>
-                <p><strong>Followers:</strong> ${user.followers}</p>
-                <p><strong>Profile View Count:</strong> ${user.profileViewCount}</p>
-                <p><strong>Chat Color:</strong> ${user.chatColor}</p>
-                <p><strong>Verified Bot:</strong> ${user.verifiedBot ? 'Yes' : 'No'}</p>
-                <p><strong>Created At:</strong> ${user.createdAt}</p>
-                <p><strong>Updated At:</strong> ${user.updatedAt}</p>
-                <p><strong>Emote Prefix:</strong> ${user.emotePrefix}</p>
-            </div>
+      <div class="data-section">
+          <h3>General Information</h3>
+          <p><strong>ID:</strong> <span class="copyable-text">${user.id}</span></p>
+          <p><strong>Banned:</strong> ${user.banned ? 'Yes' : 'No'}</p>
+          <p><strong>Followers:</strong> ${user.followers}</p>
+          <p><strong>Profile View Count:</strong> ${user.profileViewCount}</p>
+          <p><strong>Chat Color:</strong> ${user.chatColor}</p>
+          <p><strong>Verified Bot:</strong> ${user.verifiedBot ? 'Yes' : 'No'}</p>
+          <p><strong>Created At:</strong> ${user.createdAt}</p>
+          <p><strong>Updated At:</strong> ${user.updatedAt}</p>
+          <p><strong>Emote Prefix:</strong> ${user.emotePrefix}</p>
+      </div>
 
-            <div class="data-section">
-                <h3>Roles</h3>
-                <p><strong>Is Affiliate:</strong> ${user.roles.isAffiliate ? 'Yes' : 'No'}</p>
-                <p><strong>Is Partner:</strong> ${user.roles.isPartner ? 'Yes' : 'No'}</p>
-                <p><strong>Is Staff:</strong> ${user.roles.isStaff ? 'Yes' : 'No'}</p>
-            </div>
+      <div class="data-section">
+          <h3>Roles</h3>
+          <p><strong>Is Affiliate:</strong> ${user.roles.isAffiliate ? 'Yes' : 'No'}</p>
+          <p><strong>Is Partner:</strong> ${user.roles.isPartner ? 'Yes' : 'No'}</p>
+          <p><strong>Is Staff:</strong> ${user.roles.isStaff ? 'Yes' : 'No'}</p>
+      </div>
 
-            <div class="data-section">
-                <h3>Badges</h3>
-                <div class="badges-container">
-                    ${user.badges
-                      .map(
-                        (badge) =>
-                          `<span class="badge" title="${badge.description}">${badge.title} (Version: ${badge.version})</span>`
-                      )
-                      .join('')}
-                </div>
-            </div>
+      <div class="data-section">
+          <h3>Badges</h3>
+          <div class="badges-container">
+              ${user.badges
+                .map(
+                  (badge) =>
+                    `<span class="badge" title="${badge.description}">${
+                      badge.title
+                    } (Version: ${badge.version})</span>`
+                )
+                .join('')}
+          </div>
+      </div>
 
-            <div class="data-section">
-                <h3>Chat Settings</h3>
-                <p><strong>Chat Delay (ms):</strong> ${user.chatSettings.chatDelayMs}</p>
-                <p><strong>Followers Only Duration (minutes):</strong> ${
-                  user.chatSettings.followersOnlyDurationMinutes
-                }</p>
-                <p><strong>Slow Mode Duration (seconds):</strong> ${
-                  user.chatSettings.slowModeDurationSeconds
-                }</p>
-                <p><strong>Block Links:</strong> ${
-                  user.chatSettings.blockLinks ? 'Yes' : 'No'
-                }</p>
-                <p><strong>Subscribers Only Mode:</strong> ${
-                  user.chatSettings.isSubscribersOnlyModeEnabled ? 'Yes' : 'No'
-                }</p>
-                <p><strong>Emote Only Mode:</strong> ${
-                  user.chatSettings.isEmoteOnlyModeEnabled ? 'Yes' : 'No'
-                }</p>
-                <p><strong>Fast Subs Mode:</strong> ${
-                  user.chatSettings.isFastSubsModeEnabled ? 'Yes' : 'No'
-                }</p>
-                <p><strong>Unique Chat Mode:</strong> ${
-                  user.chatSettings.isUniqueChatModeEnabled ? 'Yes' : 'No'
-                }</p>
-                <p><strong>Require Verified Account:</strong> ${
-                  user.chatSettings.requireVerifiedAccount ? 'Yes' : 'No'
-                }</p>
-                <p><strong>Rules:</strong> <span title="${
-                  user.chatSettings.rules
-                }" class="rules-tooltip">${
+      <div class="data-section">
+          <h3>Chat Settings</h3>
+          <p><strong>Chat Delay (ms):</strong> ${user.chatSettings.chatDelayMs}</p>
+          <p><strong>Followers Only Duration (minutes):</strong> ${user.chatSettings.followersOnlyDurationMinutes}</p>
+          <p><strong>Slow Mode Duration (seconds):</strong> ${user.chatSettings.slowModeDurationSeconds}</p>
+          <p><strong>Block Links:</strong> ${user.chatSettings.blockLinks ? 'Yes' : 'No'}</p>
+          <p><strong>Subscribers Only Mode:</strong> ${user.chatSettings.isSubscribersOnlyModeEnabled ? 'Yes' : 'No'}</p>
+          <p><strong>Emote Only Mode:</strong> ${user.chatSettings.isEmoteOnlyModeEnabled ? 'Yes' : 'No'}</p>
+          <p><strong>Fast Subs Mode:</strong> ${user.chatSettings.isFastSubsModeEnabled ? 'Yes' : 'No'}</p>
+          <p><strong>Unique Chat Mode:</strong> ${user.chatSettings.isUniqueChatModeEnabled ? 'Yes' : 'No'}</p>
+          <p><strong>Require Verified Account:</strong> ${user.chatSettings.requireVerifiedAccount ? 'Yes' : 'No'}</p>
+          <p><strong>Rules:</strong> <span title="${user.chatSettings.rules}" class="rules-tooltip">${
       typeof user.chatSettings.rules === 'string'
         ? user.chatSettings.rules.substring(0, 100) + '...'
         : 'N/A'
     }</span></p>
-            </div>
+      </div>
 
-            <div class="data-section">
-                <h3>Stream Information</h3>
-                <p><strong>Chatter Count:</strong> ${user.chatterCount}</p>
-                <p><strong>Last Broadcast Title:</strong> ${
-                  user.lastBroadcast ? user.lastBroadcast.title : 'N/A'
-                }</p>
-                <p><strong>Last Broadcast Started At:</strong> ${
-                  user.lastBroadcast ? user.lastBroadcast.startedAt : 'N/A'
-                }</p>
-            </div>
-        `;
+      <div class="data-section">
+          <h3>Stream Information</h3>
+          <p><strong>Chatter Count:</strong> ${user.chatterCount}</p>
+          <p><strong>Last Broadcast Title:</strong> ${user.lastBroadcast ? user.lastBroadcast.title : 'N/A'}</p>
+          <p><strong>Last Broadcast Started At:</strong> ${user.lastBroadcast ? user.lastBroadcast.startedAt : 'N/A'}</p>
+      </div>
+    `;
 
     userInfoDiv.appendChild(dataSectionContainer);
 
@@ -193,25 +176,25 @@ document.addEventListener('DOMContentLoaded', function () {
       const streamDetailsDiv = document.createElement('div');
       streamDetailsDiv.classList.add('data-section');
       streamDetailsDiv.innerHTML = `
-                <h3>Live Stream Details</h3>
-                <p><strong>Stream Title:</strong> ${user.stream.title}</p>
-                <p><strong>Stream ID:</strong> ${user.stream.id}</p>
-                <p><strong>Stream Started At:</strong> ${user.stream.createdAt}</p>
-                <p><strong>Stream Type:</strong> ${user.stream.type}</p>
-                <p><strong>Viewer Count:</strong> ${user.stream.viewersCount}</p>
-                <p><strong>Game:</strong> ${user.stream.game.displayName}</p>
-            `;
+        <h3>Live Stream Details</h3>
+        <p><strong>Stream Title:</strong> ${user.stream.title}</p>
+        <p><strong>Stream ID:</strong> ${user.stream.id}</p>
+        <p><strong>Stream Started At:</strong> ${user.stream.createdAt}</p>
+        <p><strong>Stream Type:</strong> ${user.stream.type}</p>
+        <p><strong>Viewer Count:</strong> ${user.stream.viewersCount}</p>
+        <p><strong>Game:</strong> ${user.stream.game.displayName}</p>
+      `;
       userInfoDiv.appendChild(streamDetailsDiv);
     }
 
     const panelsDiv = document.createElement('div');
     panelsDiv.classList.add('data-section');
     panelsDiv.innerHTML = `
-            <h3>Panels</h3>
-            <ul>
-                ${user.panels.map((panel) => `<li>${panel.id}</li>`).join('')}
-            </ul>
-        `;
+      <h3>Panels</h3>
+      <ul>
+          ${user.panels.map((panel) => `<li>${panel.id}</li>`).join('')}
+      </ul>
+    `;
     userInfoDiv.appendChild(panelsDiv);
 
     // Add event listeners to download buttons after they are added to the DOM
@@ -243,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const filename = event.target.dataset.filename;
 
     fetch(imageUrl, {
-      mode: 'cors', // Add this to handle CORS issues
+      mode: 'cors', // Handle CORS issues
     })
       .then((response) => response.blob())
       .then((blob) => {
@@ -277,14 +260,14 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateRecentProfileData(user) {
     recentProfiles = recentProfiles.map((profile) => {
       if (profile.login === user.login) {
-        profile.isLive = user.stream ? true : false; // Add the isLive property
-        profile.bio = user.bio; // Add bio
-        profile.displayName = user.displayName; // Add display name
+        profile.isLive = !!user.stream; // true if user is live
+        profile.bio = user.bio; // Update bio
+        profile.displayName = user.displayName; // Update display name
       }
       return profile;
     });
-    localStorage.setItem(CACHE_KEY, JSON.stringify(recentProfiles)); // Update local storage
-    displayRecentProfiles(); // Refresh the display
+    localStorage.setItem(CACHE_KEY, JSON.stringify(recentProfiles));
+    displayRecentProfiles();
   }
 
   function updateRecentProfiles(user) {
@@ -304,8 +287,8 @@ document.addEventListener('DOMContentLoaded', function () {
       displayName: user.displayName,
       logo: user.logo,
       login: user.login,
-      isLive: user.stream ? true : false, // Initialize the live status
-      bio: user.bio, // Initialize the bio
+      isLive: !!user.stream,
+      bio: user.bio,
     });
 
     updateRecentProfileData(user);
@@ -332,24 +315,24 @@ document.addEventListener('DOMContentLoaded', function () {
     recentProfilesHTML += recentProfiles
       .map(
         (profile) => `
-            <div class="profile-card">
-                <div class="profile-image-container">
-                    <a href="https://www.twitch.tv/${profile.login}" target="_blank">
-                        <img src="${profile.logo}" alt="${
-          profile.displayName
-        }" class="${profile.isLive ? 'live-profile-image' : ''}">
-                    </a>
-                </div>
-                <div class="profile-details">
-                  <div class="profile-info">
-                    <div class="profile-name">${profile.displayName}</div>
-                    <div class="profile-bio">${profile.bio}</div>
-                  </div>
-                  <button class="view-stats-button" data-channel="${
-                    profile.login
-                  }">View Stats</button>
-                </div>
+          <div class="profile-card">
+            <div class="profile-image-container">
+              <a href="https://www.twitch.tv/${profile.login}" target="_blank">
+                <img src="${profile.logo}" alt="${profile.displayName}" class="${
+          profile.isLive ? 'live-profile-image' : ''
+        }">
+              </a>
             </div>
+            <div class="profile-details">
+              <div class="profile-info">
+                <div class="profile-name">${profile.displayName}</div>
+                <div class="profile-bio">${profile.bio}</div>
+              </div>
+              <button class="view-stats-button" data-channel="${
+                profile.login
+              }">View Stats</button>
+            </div>
+          </div>
         `
       )
       .join('');
@@ -359,10 +342,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Add event listeners to the view stats buttons
     const viewStatsButtons = document.querySelectorAll('.view-stats-button');
     viewStatsButtons.forEach((button) => {
-      button.addEventListener('click', function (event) {
-        const channelName = event.target.dataset.channel;
-        // Navigate to the stats page (replace with your actual stats page URL)
-        window.location.href = `stats.html#${channelName}`;
+      button.addEventListener('click', function () {
+        const channelName = this.dataset.channel;
+        window.location.hash = channelName;
       });
     });
   }
