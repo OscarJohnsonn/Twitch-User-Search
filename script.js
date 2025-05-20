@@ -279,6 +279,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (profile.login === user.login) {
         profile.isLive = user.stream ? true : false; // Add the isLive property
         profile.bio = user.bio; // Add bio
+        profile.displayName = user.displayName; // Add display name
       }
       return profile;
     });
@@ -340,10 +341,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     </a>
                 </div>
                 <div class="profile-details">
-                <p class="profile-bio">${profile.bio}</p>
-                    <button class="view-stats-button" data-channel="${
-                      profile.login
-                    }">View Stats</button>
+                  <div class="profile-info">
+                    <div class="profile-name">${profile.displayName}</div>
+                    <div class="profile-bio">${profile.bio}</div>
+                  </div>
+                  <button class="view-stats-button" data-channel="${
+                    profile.login
+                  }">View Stats</button>
                 </div>
             </div>
         `
