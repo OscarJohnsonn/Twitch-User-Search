@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const searchForm = document.getElementById('searchForm');
   const userInfoDiv = document.getElementById('user-info');
   const recentProfilesDiv = document.getElementById('recent-profiles');
+  const pageTitle = document.querySelector('h1'); // Select the h1 element
   const CACHE_KEY = 'recentTwitchProfiles';
   const MAX_PROFILES = 5;
 
@@ -9,12 +10,35 @@ document.addEventListener('DOMContentLoaded', function () {
   let recentProfiles = JSON.parse(localStorage.getItem(CACHE_KEY)) || [];
   displayRecentProfiles();
 
-  searchForm.addEventListener('submit', function (event) {
-    event.preventDefault();
-    const channelName = document.getElementById('channel_name').value.trim();
-    if (channelName) {
+  // Function to fetch user based on channel name
+  function loadUserFromHash() {
+    const hash = window.location.hash.substring(1); // Remove the '#'
+    if (hash) {
+      const channelName = hash.toLowerCase(); // Convert to lowercase
+      document.getElementById('channel_name').value = channelName; // Fill the input
       fetchTwitchUser(channelName);
     }
+  }
+
+  // Load user from hash on page load
+  loadUserFromHash();
+
+  searchForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    let channelName = document.getElementById('channel_name').value.trim();
+    if (channelName) {
+      channelName = channelName.toLowerCase(); // Convert to lowercase
+      // Update the URL hash
+      window.location.hash = channelName;
+      fetchTwitchUser(channelName);
+    }
+  });
+
+  // Add click event listener to the page title (home button)
+  pageTitle.addEventListener('click', function () {
+    userInfoDiv.innerHTML = ''; // Clear user info
+    document.getElementById('channel_name').value = ''; // Clear input field
+    window.location.hash = ''; // Clear the URL hash
   });
 
   function fetchTwitchUser(channelName) {
