@@ -1,88 +1,96 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const searchForm = document.getElementById('searchForm');
-    const userInfoDiv = document.getElementById('user-info');
-    const recentProfilesDiv = document.getElementById('recent-profiles');
-    const CACHE_KEY = 'recentTwitchProfiles';
-    const MAX_PROFILES = 5;
+  const searchForm = document.getElementById('searchForm');
+  const userInfoDiv = document.getElementById('user-info');
+  const recentProfilesDiv = document.getElementById('recent-profiles');
+  const CACHE_KEY = 'recentTwitchProfiles';
+  const MAX_PROFILES = 5;
 
-    // Load recent profiles from localStorage
-    let recentProfiles = JSON.parse(localStorage.getItem(CACHE_KEY)) || [];
-    displayRecentProfiles();
+  // Load recent profiles from localStorage
+  let recentProfiles = JSON.parse(localStorage.getItem(CACHE_KEY)) || [];
+  displayRecentProfiles();
 
-    searchForm.addEventListener('submit', function (event) {
-        event.preventDefault();
-        const channelName = document.getElementById('channel_name').value.trim();
-        if (channelName) {
-            fetchTwitchUser(channelName);
+  searchForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    const channelName = document.getElementById('channel_name').value.trim();
+    if (channelName) {
+      fetchTwitchUser(channelName);
+    }
+  });
+
+  function fetchTwitchUser(channelName) {
+    const apiUrl = `https://api.ivr.fi/v2/twitch/user?login=${channelName}`;
+
+    // Show loading indicator
+    userInfoDiv.innerHTML = '<p>Loading user data...</p>';
+
+    fetch(apiUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
-    });
+        return response.json();
+      })
+      .then((data) => {
+        if (data && data[0]) {
+          displayUserInfo(data[0]);
+          updateRecentProfiles(data[0]);
+          addDownloadJsonButton(data); // Add the JSON download button
+        } else {
+          userInfoDiv.innerHTML = '<p>No user found with that name.</p>';
+        }
+      })
+      .catch((error) => {
+        userInfoDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+      });
+  }
 
-    function fetchTwitchUser(channelName) {
-        const apiUrl = `https://api.ivr.fi/v2/twitch/user?login=${channelName}`;
+  function displayUserInfo(user) {
+    userInfoDiv.innerHTML = ''; // Clear previous data
 
-        fetch(apiUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data && data[0]) {
-                    displayUserInfo(data[0]);
-                    updateRecentProfiles(data[0]);
-                    addDownloadJsonButton(data); // Add the JSON download button
-                } else {
-                    userInfoDiv.innerHTML = '<p>No user found with that name.</p>';
-                }
-            })
-            .catch(error => {
-                userInfoDiv.innerHTML = `<p>Error: ${error.message}</p>`;
-            });
+    const bannerHeader = document.createElement('div');
+    bannerHeader.classList.add('banner-header');
+
+    if (user.banner) {
+      bannerHeader.style.backgroundImage = `url('${user.banner}')`;
     }
 
-    function displayUserInfo(user) {
-        userInfoDiv.innerHTML = ''; // Clear previous data
-
-        const bannerHeader = document.createElement('div');
-        bannerHeader.classList.add('banner-header');
-
-        if (user.banner) {
-            bannerHeader.style.backgroundImage = `url('${user.banner}')`;
-        }
-
-        let userInfoHTML = `
+    let userInfoHTML = `
             <img src="${user.logo}" alt="Profile Image">
             <button class="download-image" data-url="${user.logo}" data-filename="${user.login}_logo.png">Download Logo</button>
-            <h2>${user.displayName} ${user.stream ? '<span class="live-indicator">LIVE</span>' : ''}</h2>
+            <h2>${user.displayName} ${
+      user.stream ? '<span class="live-indicator">LIVE</span>' : ''
+    }</h2>
             <p><strong>Login Name:</strong> ${user.login}</p>
             <p><strong>Bio:</strong> ${user.bio}</p>
         `;
 
-        bannerHeader.innerHTML = userInfoHTML;
+    bannerHeader.innerHTML = userInfoHTML;
 
-        userInfoDiv.appendChild(bannerHeader);
+    userInfoDiv.appendChild(bannerHeader);
 
-        // Add download button for the banner
-        if (user.banner) {
-            const downloadBannerButton = document.createElement('button');
-            downloadBannerButton.classList.add('download-image');
-            downloadBannerButton.dataset.url = user.banner;
-            downloadBannerButton.dataset.filename = `${user.login}_banner.png`;
-            downloadBannerButton.textContent = 'Download Banner';
-            bannerHeader.appendChild(downloadBannerButton);
-        }
+    // Add download button for the banner
+    if (user.banner) {
+      const downloadBannerButton = document.createElement('button');
+      downloadBannerButton.classList.add('download-image');
+      downloadBannerButton.dataset.url = user.banner;
+      downloadBannerButton.dataset.filename = `${user.login}_banner.png`;
+      downloadBannerButton.textContent = 'Download Banner';
+      bannerHeader.appendChild(downloadBannerButton);
+    }
 
-        const dataSectionContainer = document.createElement('div');
-        dataSectionContainer.innerHTML = `
+    const dataSectionContainer = document.createElement('div');
+    dataSectionContainer.classList.add('data-section-container'); // Add grid container class
+    dataSectionContainer.innerHTML = `
             <div class="data-section">
                 <h3>General Information</h3>
-                <p><strong>ID:</strong> ${user.id}</p>
-                <p><strong>Banned:</strong> ${user.banned}</p>
+                <p><strong>ID:</strong> <span class="copyable-text">${
+                  user.id
+                }</span></p>
+                <p><strong>Banned:</strong> ${user.banned ? 'Yes' : 'No'}</p>
                 <p><strong>Followers:</strong> ${user.followers}</p>
                 <p><strong>Profile View Count:</strong> ${user.profileViewCount}</p>
                 <p><strong>Chat Color:</strong> ${user.chatColor}</p>
-                <p><strong>Verified Bot:</strong> ${user.verifiedBot}</p>
+                <p><strong>Verified Bot:</strong> ${user.verifiedBot ? 'Yes' : 'No'}</p>
                 <p><strong>Created At:</strong> ${user.createdAt}</p>
                 <p><strong>Updated At:</strong> ${user.updatedAt}</p>
                 <p><strong>Emote Prefix:</strong> ${user.emotePrefix}</p>
@@ -90,44 +98,77 @@ document.addEventListener('DOMContentLoaded', function () {
 
             <div class="data-section">
                 <h3>Roles</h3>
-                <p><strong>Is Affiliate:</strong> ${user.roles.isAffiliate}</p>
-                <p><strong>Is Partner:</strong> ${user.roles.isPartner}</p>
-                <p><strong>Is Staff:</strong> ${user.roles.isStaff}</p>
+                <p><strong>Is Affiliate:</strong> ${user.roles.isAffiliate ? 'Yes' : 'No'}</p>
+                <p><strong>Is Partner:</strong> ${user.roles.isPartner ? 'Yes' : 'No'}</p>
+                <p><strong>Is Staff:</strong> ${user.roles.isStaff ? 'Yes' : 'No'}</p>
             </div>
 
             <div class="data-section">
                 <h3>Badges</h3>
-                ${user.badges.map(badge => `<span class="badge">${badge.title} (Version: ${badge.version})</span>`).join('')}
+                <div class="badges-container">
+                    ${user.badges
+                      .map(
+                        (badge) =>
+                          `<span class="badge" title="${badge.description}">${badge.title} (Version: ${badge.version})</span>`
+                      )
+                      .join('')}
+                </div>
             </div>
 
             <div class="data-section">
                 <h3>Chat Settings</h3>
                 <p><strong>Chat Delay (ms):</strong> ${user.chatSettings.chatDelayMs}</p>
-                <p><strong>Followers Only Duration (minutes):</strong> ${user.chatSettings.followersOnlyDurationMinutes}</p>
-                <p><strong>Slow Mode Duration (seconds):</strong> ${user.chatSettings.slowModeDurationSeconds}</p>
-                <p><strong>Block Links:</strong> ${user.chatSettings.blockLinks}</p>
-                <p><strong>Subscribers Only Mode:</strong> ${user.chatSettings.isSubscribersOnlyModeEnabled}</p>
-                <p><strong>Emote Only Mode:</strong> ${user.chatSettings.isEmoteOnlyModeEnabled}</p>
-                <p><strong>Fast Subs Mode:</strong> ${user.chatSettings.isFastSubsModeEnabled}</p>
-                <p><strong>Unique Chat Mode:</strong> ${user.chatSettings.isUniqueChatModeEnabled}</p>
-                <p><strong>Require Verified Account:</strong> ${user.chatSettings.requireVerifiedAccount}</p>
-                <p><strong>Rules:</strong> ${user.chatSettings.rules}</p>
+                <p><strong>Followers Only Duration (minutes):</strong> ${
+                  user.chatSettings.followersOnlyDurationMinutes
+                }</p>
+                <p><strong>Slow Mode Duration (seconds):</strong> ${
+                  user.chatSettings.slowModeDurationSeconds
+                }</p>
+                <p><strong>Block Links:</strong> ${
+                  user.chatSettings.blockLinks ? 'Yes' : 'No'
+                }</p>
+                <p><strong>Subscribers Only Mode:</strong> ${
+                  user.chatSettings.isSubscribersOnlyModeEnabled ? 'Yes' : 'No'
+                }</p>
+                <p><strong>Emote Only Mode:</strong> ${
+                  user.chatSettings.isEmoteOnlyModeEnabled ? 'Yes' : 'No'
+                }</p>
+                <p><strong>Fast Subs Mode:</strong> ${
+                  user.chatSettings.isFastSubsModeEnabled ? 'Yes' : 'No'
+                }</p>
+                <p><strong>Unique Chat Mode:</strong> ${
+                  user.chatSettings.isUniqueChatModeEnabled ? 'Yes' : 'No'
+                }</p>
+                <p><strong>Require Verified Account:</strong> ${
+                  user.chatSettings.requireVerifiedAccount ? 'Yes' : 'No'
+                }</p>
+                <p><strong>Rules:</strong> <span title="${
+                  user.chatSettings.rules
+                }" class="rules-tooltip">${
+      typeof user.chatSettings.rules === 'string'
+        ? user.chatSettings.rules.substring(0, 100) + '...'
+        : 'N/A'
+    }</span></p>
             </div>
 
             <div class="data-section">
                 <h3>Stream Information</h3>
                 <p><strong>Chatter Count:</strong> ${user.chatterCount}</p>
-                <p><strong>Last Broadcast Title:</strong> ${user.lastBroadcast ? user.lastBroadcast.title : 'N/A'}</p>
-                <p><strong>Last Broadcast Started At:</strong> ${user.lastBroadcast ? user.lastBroadcast.startedAt : 'N/A'}</p>
+                <p><strong>Last Broadcast Title:</strong> ${
+                  user.lastBroadcast ? user.lastBroadcast.title : 'N/A'
+                }</p>
+                <p><strong>Last Broadcast Started At:</strong> ${
+                  user.lastBroadcast ? user.lastBroadcast.startedAt : 'N/A'
+                }</p>
             </div>
         `;
 
-        userInfoDiv.appendChild(dataSectionContainer);
+    userInfoDiv.appendChild(dataSectionContainer);
 
-        if (user.stream) {
-            const streamDetailsDiv = document.createElement('div');
-            streamDetailsDiv.classList.add('data-section');
-            streamDetailsDiv.innerHTML = `
+    if (user.stream) {
+      const streamDetailsDiv = document.createElement('div');
+      streamDetailsDiv.classList.add('data-section');
+      streamDetailsDiv.innerHTML = `
                 <h3>Live Stream Details</h3>
                 <p><strong>Stream Title:</strong> ${user.stream.title}</p>
                 <p><strong>Stream ID:</strong> ${user.stream.id}</p>
@@ -136,62 +177,52 @@ document.addEventListener('DOMContentLoaded', function () {
                 <p><strong>Viewer Count:</strong> ${user.stream.viewersCount}</p>
                 <p><strong>Game:</strong> ${user.stream.game.displayName}</p>
             `;
-            userInfoDiv.appendChild(streamDetailsDiv);
-        }
+      userInfoDiv.appendChild(streamDetailsDiv);
+    }
 
-        const panelsDiv = document.createElement('div');
-        panelsDiv.classList.add('data-section');
-        panelsDiv.innerHTML = `
+    const panelsDiv = document.createElement('div');
+    panelsDiv.classList.add('data-section');
+    panelsDiv.innerHTML = `
             <h3>Panels</h3>
             <ul>
-                ${user.panels.map(panel => `<li>${panel.id}</li>`).join('')}
+                ${user.panels.map((panel) => `<li>${panel.id}</li>`).join('')}
             </ul>
         `;
-        userInfoDiv.appendChild(panelsDiv);
+    userInfoDiv.appendChild(panelsDiv);
 
-        // Add event listeners to download buttons after they are added to the DOM
-        const downloadButtons = document.querySelectorAll('.download-image');
-        downloadButtons.forEach(button => {
-            button.addEventListener('click', downloadImage);
-        });
+    // Add event listeners to download buttons after they are added to the DOM
+    const downloadButtons = document.querySelectorAll('.download-image');
+    downloadButtons.forEach((button) => {
+      button.addEventListener('click', downloadImage);
+    });
+
+    // Add event listener for copyable text
+    const copyableText = document.querySelector('.copyable-text');
+    if (copyableText) {
+      copyableText.addEventListener('click', copyTextToClipboard);
     }
+  }
 
-    function addDownloadJsonButton(data) {
-        const downloadJsonButton = document.createElement('button');
-        downloadJsonButton.textContent = 'Download JSON Data';
-        downloadJsonButton.classList.add('download-json');
-        downloadJsonButton.addEventListener('click', () => {
-            downloadJson(data, 'twitch_user_data.json');
-        });
+  function addDownloadJsonButton(data) {
+    const downloadJsonButton = document.createElement('button');
+    downloadJsonButton.textContent = 'Download JSON Data';
+    downloadJsonButton.classList.add('download-json');
+    downloadJsonButton.addEventListener('click', () => {
+      downloadJson(data, 'twitch_user_data.json');
+    });
 
-        userInfoDiv.appendChild(downloadJsonButton);
-    }
+    userInfoDiv.appendChild(downloadJsonButton);
+  }
 
-    function downloadImage(event) {
-        const imageUrl = event.target.dataset.url;
-        const filename = event.target.dataset.filename;
+  function downloadImage(event) {
+    const imageUrl = event.target.dataset.url;
+    const filename = event.target.dataset.filename;
 
-        fetch(imageUrl, {
-            mode: 'cors' // Add this to handle CORS issues
-        })
-            .then(response => response.blob())
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            });
-    }
-
-    function downloadJson(data, filename) {
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], {
-            type: 'application/json'
-        });
+    fetch(imageUrl, {
+      mode: 'cors', // Add this to handle CORS issues
+    })
+      .then((response) => response.blob())
+      .then((blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -200,51 +231,86 @@ document.addEventListener('DOMContentLoaded', function () {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+      });
+  }
+
+  function downloadJson(data, filename) {
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], {
+      type: 'application/json',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
+  function updateRecentProfiles(user) {
+    // Check if the profile is already in recentProfiles
+    const existingIndex = recentProfiles.findIndex(
+      (profile) => profile.id === user.id
+    );
+
+    if (existingIndex !== -1) {
+      // If it exists, remove it to move it to the front
+      recentProfiles.splice(existingIndex, 1);
     }
 
-    function updateRecentProfiles(user) {
-        // Check if the profile is already in recentProfiles
-        const existingIndex = recentProfiles.findIndex(profile => profile.id === user.id);
+    // Add the current user to the beginning of the array
+    recentProfiles.unshift({
+      id: user.id,
+      displayName: user.displayName,
+      logo: user.logo,
+      login: user.login,
+    });
 
-        if (existingIndex !== -1) {
-            // If it exists, remove it to move it to the front
-            recentProfiles.splice(existingIndex, 1);
-        }
+    // Trim the array to the maximum number of profiles
+    recentProfiles = recentProfiles.slice(0, MAX_PROFILES);
 
-        // Add the current user to the beginning of the array
-        recentProfiles.unshift({
-            id: user.id,
-            displayName: user.displayName,
-            logo: user.logo,
-            login: user.login
-        });
+    // Store the updated array in localStorage
+    localStorage.setItem(CACHE_KEY, JSON.stringify(recentProfiles));
 
-        // Trim the array to the maximum number of profiles
-        recentProfiles = recentProfiles.slice(0, MAX_PROFILES);
+    // Update the display of recent profiles
+    displayRecentProfiles();
+  }
 
-        // Store the updated array in localStorage
-        localStorage.setItem(CACHE_KEY, JSON.stringify(recentProfiles));
+  function displayRecentProfiles() {
+    recentProfilesDiv.innerHTML = ''; // Clear previous data
 
-        // Update the display of recent profiles
-        displayRecentProfiles();
+    if (recentProfiles.length === 0) {
+      recentProfilesDiv.innerHTML = '<p>No recent profiles.</p>';
+      return;
     }
 
-    function displayRecentProfiles() {
-        recentProfilesDiv.innerHTML = ''; // Clear previous data
-
-        if (recentProfiles.length === 0) {
-            recentProfilesDiv.innerHTML = '<p>No recent profiles.</p>';
-            return;
-        }
-
-        let recentProfilesHTML = `<h2>Recent Profiles</h2>`;
-        recentProfilesHTML += recentProfiles.map(profile => `
+    let recentProfilesHTML = `<h2>Recent Profiles</h2>`;
+    recentProfilesHTML += recentProfiles
+      .map(
+        (profile) => `
             <div class="profile-card">
                 <img src="${profile.logo}" alt="${profile.displayName}">
                 <a href="https://www.twitch.tv/${profile.login}" target="_blank">${profile.displayName}</a>
             </div>
-        `).join('');
+        `
+      )
+      .join('');
 
-        recentProfilesDiv.innerHTML = recentProfilesHTML;
-    }
+    recentProfilesDiv.innerHTML = recentProfilesHTML;
+  }
+
+  function copyTextToClipboard(event) {
+    const text = event.target.innerText;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        alert('ID copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Failed to copy text: ', err);
+        alert('Failed to copy ID to clipboard.');
+      });
+  }
 });
