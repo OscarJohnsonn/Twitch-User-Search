@@ -273,6 +273,19 @@ document.addEventListener('DOMContentLoaded', function () {
     window.URL.revokeObjectURL(url);
   }
 
+  // Function to update each profile with live status and bio
+  function updateRecentProfileData(user) {
+    recentProfiles = recentProfiles.map((profile) => {
+      if (profile.login === user.login) {
+        profile.isLive = user.stream ? true : false; // Add the isLive property
+        profile.bio = user.bio; // Add bio
+      }
+      return profile;
+    });
+    localStorage.setItem(CACHE_KEY, JSON.stringify(recentProfiles)); // Update local storage
+    displayRecentProfiles(); // Refresh the display
+  }
+
   function updateRecentProfiles(user) {
     // Check if the profile is already in recentProfiles
     const existingIndex = recentProfiles.findIndex(
@@ -290,7 +303,11 @@ document.addEventListener('DOMContentLoaded', function () {
       displayName: user.displayName,
       logo: user.logo,
       login: user.login,
+      isLive: user.stream ? true : false, // Initialize the live status
+      bio: user.bio, // Initialize the bio
     });
+
+    updateRecentProfileData(user);
 
     // Trim the array to the maximum number of profiles
     recentProfiles = recentProfiles.slice(0, MAX_PROFILES);
@@ -315,14 +332,35 @@ document.addEventListener('DOMContentLoaded', function () {
       .map(
         (profile) => `
             <div class="profile-card">
-                <img src="${profile.logo}" alt="${profile.displayName}">
-                <a href="https://www.twitch.tv/${profile.login}" target="_blank">${profile.displayName}</a>
+                <div class="profile-image-container">
+                    <a href="https://www.twitch.tv/${profile.login}" target="_blank">
+                        <img src="${profile.logo}" alt="${
+          profile.displayName
+        }" class="${profile.isLive ? 'live-profile-image' : ''}">
+                    </a>
+                </div>
+                <div class="profile-details">
+                <p class="profile-bio">${profile.bio}</p>
+                    <button class="view-stats-button" data-channel="${
+                      profile.login
+                    }">View Stats</button>
+                </div>
             </div>
         `
       )
       .join('');
 
     recentProfilesDiv.innerHTML = recentProfilesHTML;
+
+    // Add event listeners to the view stats buttons
+    const viewStatsButtons = document.querySelectorAll('.view-stats-button');
+    viewStatsButtons.forEach((button) => {
+      button.addEventListener('click', function (event) {
+        const channelName = event.target.dataset.channel;
+        // Navigate to the stats page (replace with your actual stats page URL)
+        window.location.href = `stats.html#${channelName}`;
+      });
+    });
   }
 
   function copyTextToClipboard(event) {
